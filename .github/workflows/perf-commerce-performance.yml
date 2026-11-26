@@ -1,0 +1,58 @@
+# Managed by PerfAgent - regenerated on every export of the 'commerce-performance' framework.
+# Add the secrets listed under env: in Settings > Secrets and variables > Actions.
+name: "Performance - commerce-performance"
+
+on:
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Test folder under commerce-performance/tests, or 'all'"
+        default: all
+        required: true
+      environment:
+        description: "Environment file under commerce-performance/environments (without .env)"
+        default: dev
+        required: true
+      release:
+        description: "Optional release or commit label"
+        required: false
+        type: string
+  # Uncomment to run on every pull request that touches the framework:
+  # pull_request:
+  #   paths: ["commerce-performance/**"]
+  # Uncomment for a nightly run (UTC):
+  # schedule:
+  #   - cron: "30 20 * * *"
+
+jobs:
+  performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: commerce-performance
+    env:
+      TEST: ${{ inputs.test || 'all' }}
+      PERF_ENV: ${{ inputs.environment || 'dev' }}
+      CI_RELEASE: ${{ inputs.release || github.sha }}
+      # no secrets needed by the current tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install k6 v1.3.0 (pinned, checksum-verified)
+        run: |
+          curl -fsSL -o /tmp/k6.tgz https://github.com/grafana/k6/releases/download/v1.3.0/k6-v1.3.0-linux-amd64.tar.gz
+          echo "84d26fc1f7bc03e02f2e016b3b1b20c032e05dfe461fca82de4e3a6ebe72ddbd  /tmp/k6.tgz" | sha256sum -c -
+          tar -xzf /tmp/k6.tgz -C /tmp
+          sudo mv /tmp/k6-v1.3.0-linux-amd64/k6 /usr/local/bin/k6
+          k6 version
+
+      - name: Run performance tests
+        run: sh scripts/run-tests.sh "$TEST" "$PERF_ENV"
+
+      - name: Upload k6 results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-results-commerce-performance
+          path: commerce-performance/results/
