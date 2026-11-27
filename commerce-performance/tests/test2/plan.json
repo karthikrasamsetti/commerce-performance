@@ -1,0 +1,64 @@
+{
+  "test_name": "test2",
+  "script_filename": "",
+  "target_base_url": "https://dummyjson.com",
+  "scenarios": [
+    {
+      "name": "View Products",
+      "weight": 1.0,
+      "steps": [
+        {
+          "name": "Get Products",
+          "method": "GET",
+          "path": "/products",
+          "body": null,
+          "extract": [],
+          "assertions": [],
+          "graphql_query": ""
+        }
+      ],
+      "think_time": {
+        "min_seconds": 1.0,
+        "max_seconds": 3.0
+      }
+    }
+  ],
+  "load_profile": {
+    "type": "ramp",
+    "stages": [
+      {
+        "duration_seconds": 4,
+        "target_users": 5
+      },
+      {
+        "duration_seconds": 12,
+        "target_users": 5
+      },
+      {
+        "duration_seconds": 4,
+        "target_users": 0
+      }
+    ],
+    "arrival_rate": null,
+    "target_request_rate": null,
+    "pre_allocated_vus": 10,
+    "graceful_stop_seconds": 30,
+    "start_users": 0
+  },
+  "thresholds": [
+    {
+      "metric": "error_rate",
+      "op": "<",
+      "value": 0.05
+    },
+    {
+      "metric": "p95_ms",
+      "op": "<=",
+      "value": 500.0
+    }
+  ],
+  "data_file": null,
+  "headers": {},
+  "environment": "staging",
+  "insecure_tls": false
+}

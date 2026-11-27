@@ -48,7 +48,11 @@ for t in $TESTS; do
     continue
   fi
   echo "=== $t (environment: $ENVIRONMENT) ==="
-  k6 run --summary-trend-stats "avg,min,med,max,p(90),p(95),p(99)" --summary-export "results/$t-summary.json" "tests/$t/loadtest.js"
+  if [ "${PERFAGENT_COLLECT_EVIDENCE:-0}" = 1 ]; then
+    python3 scripts/collect_k6.py "$t" "$ENVIRONMENT"
+  else
+    k6 run --summary-trend-stats "avg,min,med,max,p(90),p(95),p(99)" --summary-export "results/$t-summary.json" "tests/$t/loadtest.js"
+  fi
   rc=$?
   case $rc in
     0)  echo "PASS   $t" ;;

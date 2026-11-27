@@ -1,0 +1,24 @@
+{
+  "test": "test2",
+  "plan_id": "5c39db9ef4e643bab95521105231ae6a",
+  "script_id": "d932a405058f482398a4b048baf44845",
+  "exported_at": "2026-11-27T07:19:44+00:00",
+  "target_base_url": "https://dummyjson.com",
+  "profile": "ramp",
+  "peak_users": 5,
+  "duration_seconds": 20,
+  "thresholds": [
+    {
+      "metric": "error_rate",
+      "op": "<",
+      "value": 0.05
+    },
+    {
+      "metric": "p95_ms",
+      "op": "<=",
+      "value": 500.0
+    }
+  ],
+  "required_secrets": [],
+  "data_file": null
+}
