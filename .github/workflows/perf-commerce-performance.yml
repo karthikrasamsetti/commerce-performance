@@ -50,6 +50,35 @@ jobs:
       - name: Run performance tests
         run: sh scripts/run-tests.sh "$TEST" "$PERF_ENV"
 
+      - name: Record workload identity
+        if: always()
+        run: |
+          python3 - <<'PYCODE'
+          import hashlib, json, os, re, subprocess
+          from pathlib import Path
+
+          test, environment = os.environ["TEST"], os.environ["PERF_ENV"]
+          if not all(re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9_.-]*", value)
+                     for value in (test, environment)):
+              raise SystemExit(0)
+          summary = Path("results") / f"{test}-summary.json"
+          if not summary.is_file():
+              raise SystemExit(0)
+          root = Path("tests") / test
+          inputs = [p for p in root.rglob("*") if p.is_file()
+                    and p.name not in {"test.json", "plan.json"}]
+          inputs += [Path("environments") / f"{environment}.env", Path("scripts/run-tests.sh")]
+          digest = hashlib.sha256()
+          for path in sorted(inputs):
+              digest.update(str(path).encode() + bytes(1))
+              digest.update(hashlib.sha256(path.read_bytes()).digest())
+          digest.update(subprocess.check_output(["k6", "version"]))
+          summary.with_name(f"{test}-workload.json").write_text(json.dumps({
+              "version": digest.hexdigest(), "test": test, "environment": environment,
+              "commit": os.environ["GITHUB_SHA"],
+          }))
+          PYCODE
+
       - name: Upload k6 results
         if: always()
         uses: actions/upload-artifact@v4

@@ -3,12 +3,18 @@
   "generator": "PerfAgent",
   "tool": "k6",
   "k6_version": "v1.3.0",
-  "updated_at": "2026-11-26T13:25:18+00:00",
+  "updated_at": "2026-11-27T01:39:50+00:00",
   "tests": {
     "e-commerce-browse-and-cart-flow": {
       "plan_id": "1dfa7be6bb484d8cb5ae314eb41de423",
       "script_id": "4667d8e937404659ae3bc3b145928833",
       "exported_at": "2026-11-26T13:25:18+00:00",
+      "target_base_url": "https://dummyjson.com"
+    },
+    "test1": {
+      "plan_id": "92f678315c564229a878220fb5d613b2",
+      "script_id": "d011d55f42864a8bb1a961ceafb3d7dd",
+      "exported_at": "2026-11-27T01:39:50+00:00",
       "target_base_url": "https://dummyjson.com"
     }
   }

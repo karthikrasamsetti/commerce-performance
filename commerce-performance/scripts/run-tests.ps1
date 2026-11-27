@@ -32,7 +32,7 @@ $status = 0
 foreach ($t in $tests) {
   if (-not (Test-Path "tests/$t/loadtest.js")) { Write-Host "No such test: $t"; $status = 1; continue }
   Write-Host "=== $t (environment: $Environment) ==="
-  & k6 run --summary-export "results/$t-summary.json" "tests/$t/loadtest.js"
+  & k6 run --summary-trend-stats "avg,min,med,max,p(90),p(95),p(99)" --summary-export "results/$t-summary.json" "tests/$t/loadtest.js"
   switch ($LASTEXITCODE) {
     0  { Write-Host "PASS   $t" }
     99 { Write-Host "FAIL   $t - thresholds breached"; $status = 1 }

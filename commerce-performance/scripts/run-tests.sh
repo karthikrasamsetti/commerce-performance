@@ -48,7 +48,7 @@ for t in $TESTS; do
     continue
   fi
   echo "=== $t (environment: $ENVIRONMENT) ==="
-  k6 run --summary-export "results/$t-summary.json" "tests/$t/loadtest.js"
+  k6 run --summary-trend-stats "avg,min,med,max,p(90),p(95),p(99)" --summary-export "results/$t-summary.json" "tests/$t/loadtest.js"
   rc=$?
   case $rc in
     0)  echo "PASS   $t" ;;
