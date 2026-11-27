@@ -1,0 +1,55 @@
+{
+  "test_name": "tracking",
+  "script_filename": "",
+  "target_base_url": "https://dummyjson.com",
+  "scenarios": [
+    {
+      "name": "Browse Products",
+      "weight": 1.0,
+      "steps": [
+        {
+          "name": "view products",
+          "method": "GET",
+          "path": "/products",
+          "body": null,
+          "extract": [],
+          "assertions": [],
+          "graphql_query": "",
+          "think_time": {
+            "min_seconds": 1.0,
+            "max_seconds": 2.0
+          }
+        }
+      ],
+      "think_time": {
+        "min_seconds": 1.0,
+        "max_seconds": 3.0
+      }
+    }
+  ],
+  "load_profile": {
+    "type": "ramp",
+    "stages": [
+      {
+        "duration_seconds": 60,
+        "target_users": 50
+      }
+    ],
+    "arrival_rate": 3,
+    "target_request_rate": 3,
+    "pre_allocated_vus": 50,
+    "graceful_stop_seconds": 30,
+    "start_users": 0
+  },
+  "thresholds": [
+    {
+      "metric": "p95_ms",
+      "op": "<=",
+      "value": 500.0
+    }
+  ],
+  "data_file": null,
+  "headers": {},
+  "environment": "staging",
+  "insecure_tls": false
+}

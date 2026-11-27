@@ -1,9 +1,10 @@
 #!/bin/sh
-# Managed by PerfAgent - regenerated on every export, edit environments/ instead.
+# Managed by PerfAgent - regenerated on every export, edit environments/ and config/ instead.
 #
-# Usage:  sh scripts/run-tests.sh [test-name|all] [environment]
-#   sh scripts/run-tests.sh all dev
-#   sh scripts/run-tests.sh checkout-peak uat
+# Usage:  sh scripts/run-tests.sh [test-name|all] [environment] [tier]
+#   sh scripts/run-tests.sh all dev              # full load from the approved plans
+#   sh scripts/run-tests.sh all dev smoke        # 1 user per journey, 30 seconds
+#   sh scripts/run-tests.sh checkout-peak uat load
 #
 # Exit code: 0 = every test passed its thresholds, 1 = a test failed or errored,
 # 2 = bad arguments. CI uses this exit code to pass or fail the build.
@@ -31,6 +32,11 @@ while IFS= read -r line || [ -n "$line" ]; do
   if [ -z "$current" ]; then export "$key=$value"; fi
 done < "$ENV_FILE"
 
+# Tier: third argument, else PERF_TIER, else "load". config/<env>.json defines tiers.
+TIER="${3:-${PERF_TIER:-load}}"
+case "$TIER" in ''|*[!A-Za-z0-9_-]*) echo "Invalid tier: $TIER" >&2; exit 2 ;; esac
+export PERF_ENV="$ENVIRONMENT" PERF_TIER="$TIER"
+
 command -v k6 >/dev/null 2>&1 || { echo "k6 is not on PATH" >&2; exit 2; }
 mkdir -p results
 
@@ -47,7 +53,8 @@ for t in $TESTS; do
     status=1
     continue
   fi
-  echo "=== $t (environment: $ENVIRONMENT) ==="
+  export PERF_TEST="$t"
+  echo "=== $t (environment: $ENVIRONMENT, tier: $TIER) ==="
   if [ "${PERFAGENT_COLLECT_EVIDENCE:-0}" = 1 ]; then
     python3 scripts/collect_k6.py "$t" "$ENVIRONMENT"
   else

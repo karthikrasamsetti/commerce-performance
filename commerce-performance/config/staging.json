@@ -1,0 +1,35 @@
+{
+  "about": "Budgets and load tiers for the 'staging' environment (PERF_ENV=staging). PerfAgent creates this file once and never overwrites it, so edit it freely. The target address lives in environments/staging.env. See README.md.",
+  "budgets": {},
+  "tiers": {
+    "smoke": {
+      "vus": 1,
+      "duration": "30s",
+      "budgets": "errors-only"
+    },
+    "load": {
+      "scale": 1,
+      "budgets": "all"
+    }
+  },
+  "tests": {},
+  "examples": {
+    "budgets": {
+      "http_req_duration": [
+        "p(95)<800"
+      ],
+      "errors": [
+        "rate<0.01"
+      ]
+    },
+    "tests": {
+      "checkout": {
+        "tiers": {
+          "load": {
+            "scale": 0.5
+          }
+        }
+      }
+    }
+  }
+}

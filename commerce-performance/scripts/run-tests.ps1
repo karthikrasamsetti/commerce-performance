@@ -1,8 +1,11 @@
-# Managed by PerfAgent - regenerated on every export, edit environments/ instead.
-# Usage:  pwsh scripts/run-tests.ps1 [-Test all|<name>] [-Environment dev]
+# Managed by PerfAgent - regenerated on every export, edit environments/ and config/ instead.
+# Usage:  pwsh scripts/run-tests.ps1 [-Test all|<name>] [-Environment dev] [-Tier load|smoke] [-Validate]
+#   -Validate runs `k6 inspect` on each test instead of running it (no traffic).
 param(
   [string]$Test = "all",
-  [string]$Environment = "dev"
+  [string]$Environment = "dev",
+  [string]$Tier = "",
+  [switch]$Validate
 )
 # "Continue", not "Stop": Windows PowerShell 5.1 can turn a native program's stderr
 # (k6 logs warnings there) into a terminating error under "Stop", e.g. inside Jenkins.
@@ -24,6 +27,11 @@ foreach ($line in Get-Content $envFile) {
   }
 }
 
+if (-not $Tier) { $Tier = if ($env:PERF_TIER) { $env:PERF_TIER } else { "load" } }
+if ($Tier -notmatch '^[A-Za-z0-9_-]+$') { Write-Error "Invalid tier: $Tier"; exit 2 }
+$env:PERF_ENV = $Environment
+$env:PERF_TIER = $Tier
+
 if (-not (Get-Command k6 -ErrorAction SilentlyContinue)) { Write-Error "k6 is not on PATH"; exit 2 }
 New-Item -ItemType Directory -Force -Path results | Out-Null
 
@@ -31,7 +39,13 @@ $tests = if ($Test -eq "all") { Get-ChildItem tests -Directory | ForEach-Object 
 $status = 0
 foreach ($t in $tests) {
   if (-not (Test-Path "tests/$t/loadtest.js")) { Write-Host "No such test: $t"; $status = 1; continue }
-  Write-Host "=== $t (environment: $Environment) ==="
+  $env:PERF_TEST = $t
+  if ($Validate) {
+    & k6 inspect --include-system-env-vars "tests/$t/loadtest.js" | Out-Null
+    if ($LASTEXITCODE -eq 0) { Write-Host "VALID    $t" } else { Write-Host "INVALID  $t"; $status = 1 }
+    continue
+  }
+  Write-Host "=== $t (environment: $Environment, tier: $Tier) ==="
   & k6 run --summary-trend-stats "avg,min,med,max,p(90),p(95),p(99)" --summary-export "results/$t-summary.json" "tests/$t/loadtest.js"
   switch ($LASTEXITCODE) {
     0  { Write-Host "PASS   $t" }

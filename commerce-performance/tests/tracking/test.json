@@ -1,0 +1,19 @@
+{
+  "test": "tracking",
+  "plan_id": "32ae261b9661454ab8c1b0bd096459c7",
+  "script_id": "4570339adf6a4e41b4795fd86cd42b3d",
+  "exported_at": "2026-11-27T15:13:43+00:00",
+  "target_base_url": "https://dummyjson.com",
+  "profile": "ramp",
+  "peak_users": 50,
+  "duration_seconds": 60,
+  "thresholds": [
+    {
+      "metric": "p95_ms",
+      "op": "<=",
+      "value": 500.0
+    }
+  ],
+  "required_secrets": [],
+  "data_file": null
+}

@@ -17,6 +17,15 @@ on:
         description: "Optional release or commit label"
         required: false
         type: string
+      commit:
+        description: "Optional commit SHA to test instead of the branch head (PerfAgent sends the reviewed commit)"
+        required: false
+        type: string
+      tier:
+        description: "Load tier: load (the approved plan) or smoke (1 user per journey, 30 seconds)"
+        required: false
+        default: load
+        type: string
   # Uncomment to run on every pull request that touches the framework:
   # pull_request:
   #   paths: ["commerce-performance/**"]
@@ -34,10 +43,13 @@ jobs:
     env:
       TEST: ${{ inputs.test || 'all' }}
       PERF_ENV: ${{ inputs.environment || 'dev' }}
-      CI_RELEASE: ${{ inputs.release || github.sha }}
+      CI_RELEASE: ${{ inputs.release || inputs.commit || github.sha }}
+      PERF_TIER: ${{ inputs.tier || 'load' }}
       # no secrets needed by the current tests
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit || github.ref }}
 
       - name: Install k6 v1.3.0 (pinned, checksum-verified)
         run: |
@@ -47,13 +59,16 @@ jobs:
           sudo mv /tmp/k6-v1.3.0-linux-amd64/k6 /usr/local/bin/k6
           k6 version
 
+      - name: Validate scripts (k6 inspect, no traffic)
+        run: sh scripts/validate-tests.sh "$TEST" "$PERF_ENV" "$PERF_TIER"
+
       - name: Run performance tests
         env:
           PERFAGENT_COLLECT_EVIDENCE: "1"
           PERFAGENT_TELEMETRY_URL: ${{ vars.PERFAGENT_TELEMETRY_URL }}
           PERFAGENT_TELEMETRY_TOKEN: ${{ secrets.PERFAGENT_TELEMETRY_TOKEN }}
           CI_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: sh scripts/run-tests.sh "$TEST" "$PERF_ENV"
+        run: sh scripts/run-tests.sh "$TEST" "$PERF_ENV" "$PERF_TIER"
 
       - name: Record workload identity
         if: always()
@@ -73,6 +88,8 @@ jobs:
           inputs = [p for p in root.rglob("*") if p.is_file()
                     and p.name not in {"test.json", "plan.json"}]
           inputs += [Path("environments") / f"{environment}.env", Path("scripts/run-tests.sh"), Path("scripts/collect_k6.py")]
+          inputs += [p for p in Path("lib").rglob("*") if p.is_file()]
+          inputs += [p for p in (Path("config") / f"{environment}.json",) if p.is_file()]
           digest = hashlib.sha256()
           for path in sorted(inputs):
               digest.update(str(path).encode() + bytes(1))
@@ -80,7 +97,8 @@ jobs:
           digest.update(subprocess.check_output(["k6", "version"]))
           summary.with_name(f"{test}-workload.json").write_text(json.dumps({
               "version": digest.hexdigest(), "test": test, "environment": environment,
-              "commit": os.environ["GITHUB_SHA"],
+              "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+              "tier": os.environ.get("PERF_TIER", "load"),
           }))
           PYCODE
 
